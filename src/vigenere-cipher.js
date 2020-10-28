@@ -1,78 +1,74 @@
 const CustomError = require("../extensions/custom-error");
 
+const ALFABET = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'];
+let messageCharCode;
+let keyCharCode;
+let newCharCode;
+
 class VigenereCipheringMachine {
-  constructor(isNotReverse) {
-    this.alphabetArray = [`A`, `B`, `C`, `D`, `E`, `F`, `G`, `H`, `I`, `J`, `K`, `L`, `M`, `N`, `O`, `P`, `Q`, `R`, `S`, `T`, `U`, `V`, `W`, `X`, `Y`, `Z`];
-    if (isNotReverse === false) {
-      this.isReverse = true;
-    }
-  }
-
-  _readyMessageAndKey(message, key) {
-    const readyMessage = message.match(/[a-zA-Z]+/g).join('').toUpperCase();
-    let readyKey = key.match(/[a-zA-Z]+/g).join('').toUpperCase();
-
-    if (readyMessage.length > readyKey.length) {
-      readyKey = readyKey.padEnd(readyMessage.length, readyKey);
-    } else if (readyMessage.length < readyKey.length) {
-      readyKey = readyKey.substring(0, readyMessage.length);
-    }
-
-    return [readyMessage, readyKey];
-  }
-
-  _returnNonLatinChars(message, output) {
-    message.split('').forEach((char, index) => {
-      if (!this.alphabetArray.includes(char.toUpperCase())) {
-        output.splice(index, 0, char);
-      }
-    });
-    return output;
+  constructor(mode = true) {
+    this.mode = mode;
   }
 
   encrypt(message, key) {
-    if (!message || !key) {
-      throw new Error('Wrong parameters');
+    const arrayKey = [];
+    const arrayRes = [];
+    this.message = message.toUpperCase();
+    this.key = key.toUpperCase();
+
+    for (let i = 0; i < this.key.length; i++) {
+      arrayKey.push(ALFABET.indexOf(this.key[i]));
     }
 
-    const readyMessageAndKey = this._readyMessageAndKey(message, key);
-    const messageArray = readyMessageAndKey[0].split('');
-    const keyArray = readyMessageAndKey[1].split('');
-    let output = [];
+    for (let j = 0, k = 0; j < this.message.length; j++, k++) {
+      if (!/[A-Z]/.test(this.message[j])) {
+        arrayRes.push(this.message[j]);
+        k -= 1;
+        continue;
+      }
+      messageCharCode = ALFABET.indexOf(this.message[j]);
+      keyCharCode = (k < arrayKey.length) ? arrayKey[k] : arrayKey[k % arrayKey.length];
+      newCharCode = (messageCharCode + keyCharCode >= 26)
+        ? messageCharCode + keyCharCode - 26
+        : messageCharCode + keyCharCode;
 
-    messageArray.forEach((letter, index) => {
-      const messageAlphabetIndex = this.alphabetArray.indexOf(letter);
-      const keyAlphabetIndex = this.alphabetArray.indexOf(keyArray[index]);
-      const sumIndex = messageAlphabetIndex + keyAlphabetIndex;
-      const outputAlphabetIndex = (sumIndex >= 26) ? sumIndex - 26 : sumIndex;
-      output.push(this.alphabetArray[outputAlphabetIndex]);
-    });
-
-    const result = this._returnNonLatinChars(message, output);
-    return this.isReverse ? result.reverse().join('') : result.join('');
+      arrayRes.push(ALFABET[newCharCode]);
+    }
+    return this.mode ? arrayRes.join('') : arrayRes.reverse().join('');
   }
 
-  decrypt(encryptedMessage, key) {
-    if (!encryptedMessage || !key) {
-      throw new Error('Wrong parameters');
+  decrypt(message, key) {
+    const arrayKey = [];
+    const arrayRes = [];
+    let messageCharCode;
+    let keyCharCode;
+    let newCharCode;
+    this.message = message.toUpperCase();
+    this.key = key.toUpperCase();
+
+    for (let i = 0; i < this.key.length; i++) {
+      arrayKey.push(ALFABET.indexOf(this.key[i]));
     }
 
-    const readyEncryptedMessageAndKey = this._readyMessageAndKey(encryptedMessage, key);
-    const encryptedMessageArray = readyEncryptedMessageAndKey[0].split('');
-    const keyArray = readyEncryptedMessageAndKey[1].split('');
-    let output = [];
+    for (let j = 0, k = 0; j < this.message.length; j++, k++) {
+      if (!/[A-Z]/.test(this.message[j])) {
+        arrayRes.push(this.message[j]);
+        k -= 1;
+        continue;
+      }
+      messageCharCode = ALFABET.indexOf(this.message[j]);
+      keyCharCode = (k < arrayKey.length) ? arrayKey[k] : arrayKey[k % arrayKey.length];
+      newCharCode = (messageCharCode - keyCharCode >= 0)
+        ? messageCharCode - keyCharCode
+        : messageCharCode - keyCharCode + 26;
 
-    encryptedMessageArray.forEach((letter, index) => {
-      const encryptedMessageAlphabetIndex = this.alphabetArray.indexOf(letter);
-      const keyAlphabetIndex = this.alphabetArray.indexOf(keyArray[index]);
-      const diffIndex = encryptedMessageAlphabetIndex - keyAlphabetIndex + 26;
-      const outputAlphabetIndex = (diffIndex >= 26) ? diffIndex - 26 : diffIndex;
-      output.push(this.alphabetArray[outputAlphabetIndex]);
-    });
-
-    const result = this._returnNonLatinChars(encryptedMessage, output);
-    return this.isReverse ? result.reverse().join('') : result.join('');
+      arrayRes.push(ALFABET[newCharCode]);
+    }
+    return this.mode ? arrayRes.join('') : arrayRes.reverse().join('');
   }
 }
+
+const directMachine = new VigenereCipheringMachine();
+const reverseMachine = new VigenereCipheringMachine(false);
 
 module.exports = VigenereCipheringMachine;
